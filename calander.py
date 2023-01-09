@@ -1,33 +1,57 @@
 import calendar
 import datetime
+import os
+from API import Client
 
-def calendar(month, year):
-    cal = calendar.monthcalendar(year, month)
-    print("{} {}".format(calendar.month_name[month], year))
-    for week in cal:
-        print(" ".join(str(day).rjust(2) for day in week))
+account_sid = "YOUR_ACCOUNT_SID"
+auth_token = "YOUR_AUTH_TOKEN"
+from_number = "YOUR_API_PHONE_NUMBER"
+to_number = "THE_PHONE_NUMBER_TO_SEND_TO"
+reminders = {}
 
-# displays the current month and year
-def current():
-    now = datetime.datetime.now()
-    calendar(now.month, now.year)
+def print_calendar(year, month):
+    c = calendar.Calendar()
+    month_days = c.itermonthdays(year, month)
 
-# displays a specific month and year
-def specific_time():
-    month = int(input("Enter the month (1-12): "))
-    year = int(input("Enter the year (4-digit): "))
-    calendar(month, year)
+    print("Su Mo Tu We Th Fr Sa")
+    for week in month_days:
+        for day in week:
+            if day == 0:
+                print("   ", end="")
+            else:
+                if (year, month, day) in reminders:
+                    print("%2d*" % day, end="")
+                else:
+                    print("%2d " % day, end="")
+        print()
 
-# Displays a menu to the user
+def set_reminder(year, month, day, reminder):
+    reminders[(year, month, day)] = reminder
+
+def send_text_message(reminder):
+    client = Client(account_sid, auth_token)
+    client.messages.create(to=to_number, from_=from_number, body=reminder)
+
+year = int(input("Enter the year: "))
+month = int(input("Enter the month: "))
+
+print_calendar(year, month)
+
 while True:
-    print("1. Display current month and year")
-    print("2. Display specific month and year")
-    print("3. Quit")
-    choice = input("Enter your choice (1-3): ")
-
-    if choice == "1":
-        current()
-    elif choice == "2":
-        specific_time()
-    elif choice == "3":
+    year = int(input("Enter the year for the reminder (0 to quit): "))
+    if year == 0:
         break
+    month = int(input("Enter the month for the reminder: "))
+    day = int(input("Enter the day for the reminder: "))
+    reminder = input("Enter the reminder: ")
+    set_reminder(year, month, day, reminder)
+
+while True:
+    now = datetime.datetime.now()
+    year = now.year
+    month = now.month
+    day = now.day
+
+    if (year, month, day) in reminders:
+        send_text_message(reminders[(year, month, day)])
+    # Sleep
